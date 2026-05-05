@@ -1,14 +1,14 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
 <script>
-// BOTÓN MÚSICA
+// BOTÓN
 const btn = document.getElementById("btnMusica");
 const musica = document.getElementById("musica");
 
-btn.addEventListener("click", () => {
+btn.onclick = () => {
   musica.play();
   btn.style.display = "none";
-});
+};
 
 // ESCENA
 const scene = new THREE.Scene();
@@ -18,33 +18,31 @@ scene.background = new THREE.Color(0x0d001a);
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 2000);
 camera.position.z = 20;
 
-// RENDER
-const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+// RENDER (más compatible)
+const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// 🌌 ESTRELLAS (warp)
+// 🌌 ESTRELLAS (optimizado)
 const estrellasGeometry = new THREE.BufferGeometry();
-const estrellasCount = 8000;
-const posiciones = [];
+const estrellasCount = 4000;
+const posiciones = new Float32Array(estrellasCount * 3);
 
-for (let i = 0; i < estrellasCount; i++) {
-  posiciones.push((Math.random() - 0.5) * 800);
-  posiciones.push((Math.random() - 0.5) * 800);
-  posiciones.push((Math.random() - 0.5) * 800);
+for (let i = 0; i < estrellasCount * 3; i++) {
+  posiciones[i] = (Math.random() - 0.5) * 500;
 }
 
-estrellasGeometry.setAttribute('position', new THREE.Float32BufferAttribute(posiciones, 3));
+estrellasGeometry.setAttribute('position', new THREE.BufferAttribute(posiciones, 3));
 
 const estrellasMaterial = new THREE.PointsMaterial({
   color: 0xc77dff,
-  size: 1.2
+  size: 1
 });
 
 const estrellas = new THREE.Points(estrellasGeometry, estrellasMaterial);
 scene.add(estrellas);
 
-// ⚪ CENTRO CON PULSO
+// ⚪ CENTRO
 const luz = new THREE.Mesh(
   new THREE.SphereGeometry(2, 32, 32),
   new THREE.MeshBasicMaterial({ color: 0xffffff })
@@ -58,179 +56,71 @@ const planeta = new THREE.Mesh(
 );
 scene.add(planeta);
 
-// 💬 TEXTOS CON MOVIMIENTO
-let textos = [];
-
+// 💬 TEXTOS
 function crearTexto(texto, x, y, z) {
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
 
-  ctx.font = "bold 60px Arial";
+  ctx.font = "bold 40px Arial";
   ctx.fillStyle = "#fff";
-  ctx.shadowColor = "#c77dff";
-  ctx.shadowBlur = 20;
-  ctx.fillText(texto, 20, 60);
+  ctx.fillText(texto, 10, 40);
 
   const texture = new THREE.CanvasTexture(canvas);
-  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture }));
+  const material = new THREE.SpriteMaterial({ map: texture });
+  const sprite = new THREE.Sprite(material);
 
   sprite.position.set(x, y, z);
-  sprite.scale.set(6, 2.5, 1);
+  sprite.scale.set(5, 2, 1);
 
-  sprite.userData = {
-    speedX: (Math.random() - 0.5) * 0.02,
-    speedY: (Math.random() - 0.5) * 0.02
-  };
-
-  textos.push(sprite);
   scene.add(sprite);
 }
 
-// FRASES
-const frases = [
-"Te amo Yare 💜","Mi niña","Preciosa","Hermosa","Linda",
-"Bonita","Bella","Mi Yare hermosa 💜","Te amo mi amor",
-"Mi princesa 👑","Mi todo ✨","Eres perfecta",
-"Mi vida 💜","Mi cielo","Mi mundo","Mi corazón 💖",
-"Mi razón de sonreír","Mi reina 👑","Mi dulce amor",
-"Yare te amo demasiado 💜"
-];
+const frases = ["Te amo Yare 💜","Mi niña","Hermosa","Linda","Mi amor 💜"];
 
-for (let i = 0; i < 120; i++) {
-  let texto = frases[Math.floor(Math.random() * frases.length)];
+for (let i = 0; i < 50; i++) {
   crearTexto(
-    texto,
-    (Math.random() - 0.5) * 150,
-    (Math.random() - 0.5) * 150,
-    (Math.random() - 0.5) * 150
+    frases[Math.floor(Math.random() * frases.length)],
+    (Math.random() - 0.5) * 100,
+    (Math.random() - 0.5) * 100,
+    (Math.random() - 0.5) * 100
   );
 }
 
-// 💜 CORAZONES AL TOCAR
-function crearCorazon(x, y) {
-  const div = document.createElement("div");
-  div.innerHTML = "💜";
-  div.style.position = "absolute";
-  div.style.left = x + "px";
-  div.style.top = y + "px";
-  div.style.fontSize = "20px";
-  div.style.pointerEvents = "none";
-
-  document.body.appendChild(div);
-
-  let i = 0;
-  let anim = setInterval(() => {
-    i++;
-    div.style.top = (y - i * 2) + "px";
-    div.style.opacity = 1 - i / 50;
-
-    if (i > 50) {
-      clearInterval(anim);
-      div.remove();
-    }
-  }, 16);
-}
-
-document.addEventListener("click", (e) => {
-  for (let i = 0; i < 10; i++) {
-    crearCorazon(e.clientX, e.clientY);
-  }
-});
-
-// 🎮 CONTROLES
+// CONTROLES
 let isDragging = false;
-let previousMousePosition = { x: 0, y: 0 };
-let initialDistance = null;
+let prev = { x: 0, y: 0 };
 
 document.addEventListener("mousedown", () => isDragging = true);
 document.addEventListener("mouseup", () => isDragging = false);
 
 document.addEventListener("mousemove", (e) => {
   if (isDragging) {
-    let deltaX = e.clientX - previousMousePosition.x;
-    let deltaY = e.clientY - previousMousePosition.y;
-
-    scene.rotation.y += deltaX * 0.005;
-    scene.rotation.x += deltaY * 0.005;
+    scene.rotation.y += (e.clientX - prev.x) * 0.005;
+    scene.rotation.x += (e.clientY - prev.y) * 0.005;
   }
-  previousMousePosition = { x: e.clientX, y: e.clientY };
+  prev = { x: e.clientX, y: e.clientY };
 });
 
-document.addEventListener("touchstart", (e) => {
-  isDragging = true;
-  if (e.touches.length === 2) initialDistance = null;
-});
-
+// TOUCH SIMPLE
 document.addEventListener("touchmove", (e) => {
-
-  if (e.touches.length === 2) {
-    let dx = e.touches[0].clientX - e.touches[1].clientX;
-    let dy = e.touches[0].clientY - e.touches[1].clientY;
-    let distance = Math.sqrt(dx * dx + dy * dy);
-
-    if (initialDistance !== null) {
-      let diff = distance - initialDistance;
-      camera.position.z -= diff * 0.05;
-    }
-
-    initialDistance = distance;
-    return;
-  }
-
-  let touch = e.touches[0];
-
-  let deltaX = touch.clientX - previousMousePosition.x;
-  let deltaY = touch.clientY - previousMousePosition.y;
-
-  scene.rotation.y += deltaX * 0.005;
-  scene.rotation.x += deltaY * 0.005;
-
-  previousMousePosition = { x: touch.clientX, y: touch.clientY };
-
+  let t = e.touches[0];
+  scene.rotation.y += (t.clientX - prev.x) * 0.005;
+  scene.rotation.x += (t.clientY - prev.y) * 0.005;
+  prev = { x: t.clientX, y: t.clientY };
 });
 
-document.addEventListener("touchend", () => {
-  isDragging = false;
-  initialDistance = null;
-});
-
-document.addEventListener("wheel", (e) => {
-  camera.position.z += e.deltaY * 0.01;
-});
-
-// 🚀 ANIMACIÓN NIVEL DIOS
-let t = 0;
-
+// ANIMACIÓN
 function animate() {
   requestAnimationFrame(animate);
 
-  t += 0.01;
-
-  // 🌌 Warp estrellas
-  estrellas.position.z += 0.5;
-  if (estrellas.position.z > 200) estrellas.position.z = 0;
-
-  // 💫 Centro late
-  let scale = 1 + Math.sin(t * 2) * 0.2;
-  luz.scale.set(scale, scale, scale);
-
-  // 🪐 rotación
+  estrellas.rotation.y += 0.0005;
   planeta.rotation.y += 0.01;
 
-  // 💬 textos flotando
-  textos.forEach(txt => {
-    txt.position.x += txt.userData.speedX;
-    txt.position.y += txt.userData.speedY;
-  });
-
-  // 🎥 cámara automática suave
-  camera.position.x = Math.sin(t * 0.3) * 2;
-  camera.position.y = Math.cos(t * 0.3) * 2;
-
-  camera.lookAt(scene.position);
+  let scale = 1 + Math.sin(Date.now() * 0.002) * 0.1;
+  luz.scale.set(scale, scale, scale);
 
   renderer.render(scene, camera);
 }
 
 animate();
-</script>
+    </script>
