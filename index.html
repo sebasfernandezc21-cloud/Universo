@@ -1,6 +1,13 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
 <script>
+try {
+
+if (!window.THREE) {
+  document.body.innerHTML = "<h2 style='color:white;text-align:center'>Error cargando Three.js</h2>";
+  throw "No carga Three.js";
+}
+
 // BOTÓN
 const btn = document.getElementById("btnMusica");
 const musica = document.getElementById("musica");
@@ -15,106 +22,46 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0d001a);
 
 // CÁMARA
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 2000);
-camera.position.z = 20;
+const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 1000);
+camera.position.z = 15;
 
-// RENDER (más compatible)
+// RENDER
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// 🌌 ESTRELLAS (optimizado)
-const estrellasGeometry = new THREE.BufferGeometry();
-const estrellasCount = 4000;
-const posiciones = new Float32Array(estrellasCount * 3);
+// ESTRELLAS (ultra ligero)
+const geometry = new THREE.BufferGeometry();
+const vertices = [];
 
-for (let i = 0; i < estrellasCount * 3; i++) {
-  posiciones[i] = (Math.random() - 0.5) * 500;
-}
-
-estrellasGeometry.setAttribute('position', new THREE.BufferAttribute(posiciones, 3));
-
-const estrellasMaterial = new THREE.PointsMaterial({
-  color: 0xc77dff,
-  size: 1
-});
-
-const estrellas = new THREE.Points(estrellasGeometry, estrellasMaterial);
-scene.add(estrellas);
-
-// ⚪ CENTRO
-const luz = new THREE.Mesh(
-  new THREE.SphereGeometry(2, 32, 32),
-  new THREE.MeshBasicMaterial({ color: 0xffffff })
-);
-scene.add(luz);
-
-// 🪐 PLANETA
-const planeta = new THREE.Mesh(
-  new THREE.SphereGeometry(1, 32, 32),
-  new THREE.MeshBasicMaterial({ color: 0x8a2be2, wireframe: true })
-);
-scene.add(planeta);
-
-// 💬 TEXTOS
-function crearTexto(texto, x, y, z) {
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-
-  ctx.font = "bold 40px Arial";
-  ctx.fillStyle = "#fff";
-  ctx.fillText(texto, 10, 40);
-
-  const texture = new THREE.CanvasTexture(canvas);
-  const material = new THREE.SpriteMaterial({ map: texture });
-  const sprite = new THREE.Sprite(material);
-
-  sprite.position.set(x, y, z);
-  sprite.scale.set(5, 2, 1);
-
-  scene.add(sprite);
-}
-
-const frases = ["Te amo Yare 💜","Mi niña","Hermosa","Linda","Mi amor 💜"];
-
-for (let i = 0; i < 50; i++) {
-  crearTexto(
-    frases[Math.floor(Math.random() * frases.length)],
-    (Math.random() - 0.5) * 100,
-    (Math.random() - 0.5) * 100,
-    (Math.random() - 0.5) * 100
+for (let i = 0; i < 2000; i++) {
+  vertices.push(
+    (Math.random() - 0.5) * 200,
+    (Math.random() - 0.5) * 200,
+    (Math.random() - 0.5) * 200
   );
 }
 
-// CONTROLES
-let isDragging = false;
-let prev = { x: 0, y: 0 };
+geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
 
-document.addEventListener("mousedown", () => isDragging = true);
-document.addEventListener("mouseup", () => isDragging = false);
+const material = new THREE.PointsMaterial({ color: 0xc77dff, size: 1 });
+const stars = new THREE.Points(geometry, material);
 
-document.addEventListener("mousemove", (e) => {
-  if (isDragging) {
-    scene.rotation.y += (e.clientX - prev.x) * 0.005;
-    scene.rotation.x += (e.clientY - prev.y) * 0.005;
-  }
-  prev = { x: e.clientX, y: e.clientY };
-});
+scene.add(stars);
 
-// TOUCH SIMPLE
-document.addEventListener("touchmove", (e) => {
-  let t = e.touches[0];
-  scene.rotation.y += (t.clientX - prev.x) * 0.005;
-  scene.rotation.x += (t.clientY - prev.y) * 0.005;
-  prev = { x: t.clientX, y: t.clientY };
-});
+// CENTRO
+const luz = new THREE.Mesh(
+  new THREE.SphereGeometry(1.5, 16, 16),
+  new THREE.MeshBasicMaterial({ color: 0xffffff })
+);
+
+scene.add(luz);
 
 // ANIMACIÓN
 function animate() {
   requestAnimationFrame(animate);
 
-  estrellas.rotation.y += 0.0005;
-  planeta.rotation.y += 0.01;
+  stars.rotation.y += 0.001;
 
   let scale = 1 + Math.sin(Date.now() * 0.002) * 0.1;
   luz.scale.set(scale, scale, scale);
@@ -123,4 +70,9 @@ function animate() {
 }
 
 animate();
-    </script>
+
+} catch (e) {
+  document.body.innerHTML = "<h2 style='color:white;text-align:center'>Tu celular no soporta esta animación 😢</h2>";
+  console.error(e);
+}
+</script>
